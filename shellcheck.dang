@@ -1,0 +1,91 @@
+"""
+A linter for shell scripts, powered by shellcheck
+"""
+type Shellcheck {
+  """
+  Shell script paths to exclude from checking
+  """
+  pub exclude: [String!]
+
+  """
+  Run shellcheck on all shell scripts in the workspace
+  """
+  pub check(ws: Workspace!): Void @check {
+    let layers = scripts(ws).reduce(directory) { layers, script =>
+      layers.withDirectory("", script.checkLayer)
+    }
+    layers.sync
+    null
+  }
+
+  """
+  Find all .sh files in the workspace and return them as Script objects
+  """
+  pub scripts(ws: Workspace!): [Script!] {
+    ws
+      .directory(".", include: ["**/*.sh"])
+      .glob("**/*.sh")
+      .map { wsPath =>
+        Script(
+          file: ws.file(wsPath),
+          path: wsPath,
+          base: base,
+        )
+      }
+  }
+
+  """
+  The base container with shellcheck installed
+  """
+  pub base: Container! {
+    container
+      .from("koalaman/shellcheck-alpine")
+      .withoutEntrypoint
+      .withWorkdir("/ws")
+  }
+}
+
+type Script {
+  """
+  The shell script file to check
+  """
+  let file: File!
+
+  """
+  The path of the script relative to the workspace root
+  """
+  pub path: String!
+
+  """
+  The base container used to run shellcheck
+  """
+  let base: Container!
+
+  """
+  Run shellcheck on this script
+  """
+  pub check: Void @check {
+    execCheck.sync
+    null
+  }
+
+  """
+  Execute shellcheck on the script and return the resulting container.
+  Exposed separately so checkLayer can wrap it for parallel execution.
+  Can be inlined into check() once the engine supports parallel sub-checks.
+  """
+  let execCheck: Container! {
+    base
+      .withMountedFile(path, file)
+      .withExec(["shellcheck", path])
+  }
+
+  """
+  Wraps the check result as a directory layer, so Shellcheck.check() can
+  run all checks in parallel via directory merging. Temporary workaround
+  until the engine supports parallel sub-checks natively.
+  """
+  let checkLayer: Directory! {
+    directory.withFile(path, execCheck.file(path))
+  }
+}
