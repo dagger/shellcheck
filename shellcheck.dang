@@ -8,7 +8,8 @@ type Shellcheck {
   pub exclude: [String!]
 
   """
-  Run shellcheck on all shell scripts in the workspace
+  Run shellcheck on all shell scripts at or below the client's working
+  directory
   """
   pub check(ws: Workspace!): Void @check {
     let layers = scripts(ws).reduce(directory) { layers, script =>
@@ -19,7 +20,8 @@ type Shellcheck {
   }
 
   """
-  Find all .sh files in the workspace and return them as Script objects
+  Find all .sh files at or below the client's working directory and return
+  them as Script objects
   """
   pub scripts(ws: Workspace!): [Script!] {
     ws
@@ -52,7 +54,7 @@ type Script {
   let file: File!
 
   """
-  The path of the script relative to the workspace root
+  The path of the script relative to the client's working directory
   """
   pub path: String!
 
