@@ -25,7 +25,7 @@ type Shellcheck {
   """
   pub scripts(ws: Workspace!): [Script!] {
     ws
-      .directory(".", include: ["**/*.sh"])
+      .directory(".", include: ["**/*.sh"], exclude: exclude)
       .glob("**/*.sh")
       .map { wsPath =>
         Script(

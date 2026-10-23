@@ -26,6 +26,18 @@ dagger check                    # run every check in the workspace
 dagger check shellcheck:check   # just the shellcheck check
 ```
 
+## Configuration
+
+Skip scripts by glob pattern in `dagger.toml`:
+
+```toml
+[modules.shellcheck]
+source = "github.com/dagger/shellcheck"
+settings.exclude = ["vendor/**", "scripts/legacy.sh"]
+```
+
+Patterns are matched relative to your current working directory.
+
 ## Working directory awareness
 
 Script discovery finds `**/*.sh` at or below your current working directory,
